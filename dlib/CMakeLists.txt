@@ -9,7 +9,7 @@ project(dlib)
 
 set(CPACK_PACKAGE_NAME "dlib")
 set(CPACK_PACKAGE_VERSION_MAJOR "19")
-set(CPACK_PACKAGE_VERSION_MINOR "13")
+set(CPACK_PACKAGE_VERSION_MINOR "15")
 set(CPACK_PACKAGE_VERSION_PATCH "99")
 set(VERSION ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH})
 # Only print these messages once, even if dlib is added multiple times via add_subdirectory()
@@ -600,6 +600,12 @@ if (NOT TARGET dlib)
                # Grab all the -D flags from CMAKE_CXX_FLAGS so we can pass them
                # to nvcc.
                string(REGEX MATCHALL "-D[^ ]*" FLAGS_FOR_NVCC "${CMAKE_CXX_FLAGS}")
+
+               # Check if we are being built as part of a pybind11 module. 
+               if (COMMAND pybind11_add_module)
+                  # Don't export unnecessary symbols.
+                  list(APPEND FLAGS_FOR_NVCC "-Xcompiler=-fvisibility=hidden")
+               endif()
             endif()
 
 
@@ -819,8 +825,21 @@ if (NOT TARGET dlib)
          ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
       install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/dlib
-         FILES_MATCHING PATTERN "*.h" PATTERN "*.cmake"
-         REGEX "${CMAKE_CURRENT_BINARY_DIR}" EXCLUDE)
+         FILES_MATCHING 
+            PATTERN "*.h" 
+            PATTERN "*.cmake"
+            PATTERN "*_tutorial.txt"
+            PATTERN "cassert"
+            PATTERN "cstring"
+            PATTERN "fstream"
+            PATTERN "iomanip"
+            PATTERN "iosfwd"
+            PATTERN "iostream"
+            PATTERN "istream"
+            PATTERN "locale"
+            PATTERN "ostream"
+            PATTERN "sstream"
+            REGEX "${CMAKE_CURRENT_BINARY_DIR}" EXCLUDE)
 
 
       configure_file(${PROJECT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
@@ -884,6 +903,7 @@ endif()
 if (COMMAND pybind11_add_module)
    # Don't export unnecessary symbols.
    set_target_properties(dlib PROPERTIES CXX_VISIBILITY_PRESET "hidden")
+   set_target_properties(dlib PROPERTIES CUDA_VISIBILITY_PRESET "hidden")
 endif()
 
 add_library(dlib::dlib ALIAS dlib)
